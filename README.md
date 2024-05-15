@@ -54,7 +54,7 @@ let byte_buffer = buffer.into_inner();
 
 // write byte_buffer to GPU
 
-assert_eq!(&byte_buffer, &[0, 0, 128, 63, 0, 0, 0, 0,
+assert_eq!(byte_buffer, &[0, 0, 128, 63, 0, 0, 0, 0,
 0, 0, 0, 0, 0, 0, 128, 63, 0, 0, 0, 0, 0, 0, 0, 0]);
 ```
 
@@ -122,9 +122,9 @@ let mut byte_buffer: Vec<u8> = Vec::new();
 
 let mut buffer = DynamicStorageBuffer::new_with_alignment(&mut byte_buffer, 64);
 let offsets = [
-    buffer.write(&[5.; 10]).unwrap(),
-    buffer.write(&vec![3u32; 20]).unwrap(),
-    buffer.write(&glam::Vec3::ONE).unwrap(),
+    buffer.write(&[5.; 10]).unwrap().1,
+    buffer.write(&vec![3u32; 20]).unwrap().1,
+    buffer.write(&glam::Vec3::ONE).unwrap().1,
 ];
 
 // write byte_buffer to GPU
@@ -143,9 +143,9 @@ let mut uninit_buffer: Vec<MaybeUninit<u8>> = Vec::new();
 
 let mut buffer = DynamicStorageBuffer::new_with_alignment(&mut uninit_buffer, 64);
 let offsets = [
-    buffer.write(&[5.; 10]).unwrap(),
-    buffer.write(&vec![3u32; 20]).unwrap(),
-    buffer.write(&glam::Vec3::ONE).unwrap(),
+    buffer.write(&[5.; 10]).unwrap().1,
+    buffer.write(&vec![3u32; 20]).unwrap().1,
+    buffer.write(&glam::Vec3::ONE).unwrap().1,
 ];
 
 // SAFETY: Vec<u8> and Vec<MaybeUninit<u8>> share the same layout.

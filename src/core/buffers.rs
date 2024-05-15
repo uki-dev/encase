@@ -13,8 +13,8 @@ impl<B> StorageBuffer<B> {
         Self { inner: buffer }
     }
 
-    pub fn into_inner(self) -> B {
-        self.inner
+    pub fn into_inner(&self) -> &B {
+        &self.inner
     }
 }
 
@@ -37,13 +37,13 @@ impl<B> AsMut<B> for StorageBuffer<B> {
 }
 
 impl<B: BufferMut> StorageBuffer<B> {
-    pub fn write<T>(&mut self, value: &T) -> Result<()>
+    pub fn write<T>(&mut self, value: &T) -> Result<&Self>
     where
         T: ?Sized + ShaderType + WriteInto,
     {
         let mut writer = Writer::new(value, &mut self.inner, 0)?;
         value.write_into(&mut writer);
-        Ok(())
+        Ok(self)
     }
 }
 
@@ -78,8 +78,8 @@ impl<B> UniformBuffer<B> {
         }
     }
 
-    pub fn into_inner(self) -> B {
-        self.inner.inner
+    pub fn into_inner(&self) -> &B {
+        &self.inner.inner
     }
 }
 
@@ -102,12 +102,13 @@ impl<B> AsMut<B> for UniformBuffer<B> {
 }
 
 impl<B: BufferMut> UniformBuffer<B> {
-    pub fn write<T>(&mut self, value: &T) -> Result<()>
+    pub fn write<T>(&mut self, value: &T) -> Result<&Self>
     where
         T: ?Sized + ShaderType + WriteInto,
     {
         T::assert_uniform_compat();
-        self.inner.write(value)
+        let _ = self.inner.write(value);
+        return Ok(self);
     }
 }
 
@@ -171,8 +172,8 @@ impl<B> DynamicStorageBuffer<B> {
         self.offset = offset as usize;
     }
 
-    pub fn into_inner(self) -> B {
-        self.inner
+    pub fn into_inner(&self) -> &B {
+        &self.inner
     }
 }
 
@@ -195,7 +196,7 @@ impl<B> AsMut<B> for DynamicStorageBuffer<B> {
 }
 
 impl<B: BufferMut> DynamicStorageBuffer<B> {
-    pub fn write<T>(&mut self, value: &T) -> Result<u64>
+    pub fn write<T>(&mut self, value: &T) -> Result<(&Self, u64)>
     where
         T: ?Sized + ShaderType + WriteInto,
     {
@@ -206,7 +207,7 @@ impl<B: BufferMut> DynamicStorageBuffer<B> {
 
         self.offset += self.alignment.round_up(value.size().get()) as usize;
 
-        Ok(offset as u64)
+        Ok((self, offset as u64))
     }
 }
 
@@ -265,8 +266,8 @@ impl<B> DynamicUniformBuffer<B> {
         self.inner.set_offset(offset);
     }
 
-    pub fn into_inner(self) -> B {
-        self.inner.inner
+    pub fn into_inner(&self) -> &B {
+        &self.inner.inner
     }
 }
 
@@ -289,12 +290,16 @@ impl<B> AsMut<B> for DynamicUniformBuffer<B> {
 }
 
 impl<B: BufferMut> DynamicUniformBuffer<B> {
-    pub fn write<T>(&mut self, value: &T) -> Result<u64>
+    pub fn write<T>(&mut self, value: &T) -> Result<(&Self, u64)>
     where
         T: ?Sized + ShaderType + WriteInto,
     {
         T::assert_uniform_compat();
-        self.inner.write(value)
+        let result = self.inner.write(value);
+        match result {
+            Ok((_, offset)) => Ok((self, offset)),
+            Err(err) => Err(err),
+        }
     }
 }
 
